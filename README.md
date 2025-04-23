@@ -1,46 +1,46 @@
-# auto-commit
+# Dump - Auto Commit Bot 🤖
 
-🌳 Making green your Github stats, powered by [Github Actions](https://github.com/features/actions)
+[![GitHub Workflow Status](https://github.com/AzyrRuthless/dump/actions/workflows/autocommit.yml/badge.svg)](https://github.com/AzyrRuthless/dump/actions/workflows/autocommit.yml)
 
-[![Auto commit](https://github.com/mazipan/auto-commit/workflows/Auto%20commit/badge.svg)](https://github.com/mazipan/auto-commit/actions?query=workflow%3A%22Auto+commit%22)
+Repositori ini (`AzyrRuthless/dump`) menggunakan GitHub Actions untuk secara otomatis memperbarui file `LAST_UPDATED` dengan timestamp saat ini dan melakukan commit perubahan tersebut kembali ke repositori.
 
-![Mazipan's Github Stats](https://ghchart.rshah.org/mazipan)
+## Tujuan
 
-## Make it your own
+Tujuan utama repositori ini adalah untuk:
 
-- Create your own repo with click "**Use this template**" button (⚠️ forked repo will not work)
+1.  Menunjukkan contoh penggunaan GitHub Actions untuk otomatisasi tugas Git dasar.
+2.  Menjaga repositori ini tetap "aktif" dengan adanya commit otomatis secara berkala (misalnya, untuk aktivitas profil GitHub).
+3.  Menyimpan catatan sederhana kapan terakhir kali proses otomatis ini berhasil berjalan.
 
-Or just do in the manual way:
+## Bagaimana Cara Kerjanya?
 
-- ✅ Create your own repo
-- ✅ Copy file `.github/workflows/autocommit.yml` and `LAST_UPDATED` to your repo
-- ✅ You have to configure your repository. Go to: **Settings** -> **Action** -> **General** -> **Workflow permissions** and choose **"Read and write permissions"**
-- ✅ Change the `email` and `name` information on file [autocommit.yml, line 29 and 30](https://github.com/mazipan/auto-commit/blob/master/.github/workflows/autocommit.yml#L29)
-- ✅ Change the scheduling time on file [autocommit.yml, line 10](https://github.com/mazipan/auto-commit/blob/master/.github/workflows/autocommit.yml#L10). You can use [crontab.guru](https://crontab.guru/) if you are not familiar with the cron schedule string. For first time, you can try to run it in every hour with string `1 * * * *` .
-- ✅ Consider to support me, at least click the 🌟 button
+Sebuah workflow GitHub Actions (didefinisikan dalam file `.github/workflows/auto_commit.yml`) dikonfigurasi untuk berjalan secara otomatis pada kondisi berikut:
 
-## Article (in Bahasa Indonesia)
+1.  **Setiap `push` ke branch `master`**: Workflow akan terpicu setiap kali ada perubahan yang di-push ke branch utama.
+2.  **Jadwal Harian**: Workflow dijadwalkan untuk berjalan **setiap hari** pada pukul **07:00, 09:00, dan 11:00 UTC** (`0 7,9,11 * * *`).
 
-- https://mazipan.space/membuat-commit-otomatis-ke-github/
+### Langkah-langkah Workflow:
 
-## Repo using this auto-commit
+1.  **Checkout**: Mengambil kode terbaru dari repositori.
+2.  **Update Timestamp**: Memperbarui konten file `LAST_UPDATED` dengan tanggal dan waktu saat ini dalam format ISO 8601 UTC.
+3.  **Cek Perubahan & Pencegahan Loop**:
+    *   Memeriksa apakah file `LAST_UPDATED` benar-benar memiliki perubahan yang belum di-commit.
+    *   Memeriksa pesan commit terakhir. Jika commit terakhir juga merupakan auto-commit dari workflow ini (memiliki pola `chore(bot): ... auto commit`), proses commit dan push akan **dilewati** untuk **mencegah loop tak terbatas**.
+4.  **Commit**: Jika ada perubahan dan commit terakhir *bukan* dari bot ini, workflow akan melakukan `git commit` dengan salah satu pesan acak yang telah ditentukan (contoh: `chore(bot): 🤖 auto commit`).
+5.  **Push**: Mendorong (push) commit baru tersebut kembali ke branch `master` di repositori GitHub.
 
-- You can add your repo here
+## File Penting
 
+*   `LAST_UPDATED`: File teks sederhana yang berisi timestamp UTC terakhir kali workflow berhasil berjalan dan melakukan commit.
+*   `.github/workflows/auto_commit.yml`: File konfigurasi GitHub Actions yang menjalankan otomatisasi ini. *(Pastikan nama file ini sesuai dengan yang ada di repositori Anda)*
 
-## Credits
+## Melihat Workflow
 
-- [Github Actions](https://github.com/features/actions)
-- [ad-m/github-push-action](https://github.com/ad-m/github-push-action)
+Anda dapat melihat detail konfigurasi workflow dan riwayat eksekusinya di:
 
-## Consider to Support
-
-- 👉 🇮🇩 [Trakteer](https://trakteer.id/mazipan?utm_source=github)
-- 👉 🌍 [BuyMeACoffe](https://www.buymeacoffee.com/mazipan?utm_source=github)
-- 👉 🌍 [Paypal](https://www.paypal.me/mazipan?utm_source=github)
-- 👉 🌍 [Ko-Fi](https://ko-fi.com/mazipan)
+*   Tab **Actions** repositori ini: [https://github.com/AzyrRuthless/dump/actions](https://github.com/AzyrRuthless/dump/actions)
+*   File Workflow itu sendiri: [`./.github/workflows/autocommit.yml`](./.github/workflows/autocommit.yml) *(Klik link ini jika nama file-nya sudah benar)*
 
 ---
 
-© 2020 Crafted by Irfan Maulana
-
+*Repositori ini terutama berfungsi sebagai demonstrasi dan untuk menjaga aktivitas profil GitHub.*

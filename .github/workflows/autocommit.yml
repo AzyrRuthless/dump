@@ -1,36 +1,83 @@
+# Nama workflow
 name: Auto commit
 
+# Pemicu workflow
 on:
-
-  push:
-    branches:
-      - master
-      
+  # Jalankan sesuai jadwal (cron)
   schedule:
-  - cron: "0 7,9,11 * * 1,3" # See https://crontab.guru/#0_7,9,11_*_*_1,3
+    # Jalankan SETIAP HARI pada jam 07:00, 09:00, dan 11:00 UTC
+    # Lihat: https://crontab.guru/#0_7,9,11_*_*_*
+    - cron: "0 7,9,11 * * *"
 
+  # Izinkan workflow dijalankan secara manual dari tab Actions
+  workflow_dispatch:
+
+# Definisi pekerjaan (jobs)
 jobs:
   auto_commit:
+    # Jalankan di runner Ubuntu terbaru
     runs-on: ubuntu-latest
-    steps:
-      - name: DEBUG 
-        run: echo "::debug::Ref = ${{github.ref}}"
-      - uses: actions/checkout@v3      
-        with:
-         persist-credentials: false
-         fetch-depth: 0
 
-      - name: Modify last update
+    # Berikan izin untuk menulis ke repositori (diperlukan untuk push)
+    permissions:
+      contents: write
+
+    # Langkah-langkah yang akan dijalankan
+    steps:
+      # Langkah 1: Checkout kode repositori
+      - name: Checkout repository
+        # Gunakan action checkout versi terbaru (v4 saat ini)
+        uses: actions/checkout@v4
+        with:
+          # Jangan simpan kredensial di config git global (push action akan menangani auth)
+          persist-credentials: false
+          # Ambil seluruh history (diperlukan untuk memeriksa commit terakhir)
+          fetch-depth: 0
+
+      # Langkah 2: Ubah file LAST_UPDATED dengan timestamp saat ini
+      - name: Modify last update file
         run: |
-          d=`date '+%Y-%m-%dT%H:%M:%SZ'`
-          echo $d > LAST_UPDATED
-          
+          # Format tanggal ISO 8601 UTC
+          echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > LAST_UPDATED
+
+      # Langkah 3: Lakukan commit jika ada perubahan & bukan loop
       - name: Commit changes
+        # Beri ID pada langkah ini agar outputnya bisa dirujuk
+        id: commit
         run: |
-          git config --local user.email "mazipanneh@gmail.com"
-          git config --local user.name "mazipan"
-          git add -A
-          
+          # Konfigurasi Git user lokal untuk commit ini
+          git config --local user.email "132790292+AzyrRuthless@users.noreply.github.com"
+          git config --local user.name "AzyrRuthless"
+          # Alternatif: Gunakan user bot standar GitHub Actions
+          # git config --local user.email "actions@github.com"
+          # git config --local user.name "github-actions[bot]"
+
+          # Tambahkan hanya file yang spesifik (lebih aman)
+          git add LAST_UPDATED
+
+          # Periksa apakah ada perubahan yang di-stage untuk di-commit
+          if git diff --staged --quiet; then
+            echo "Tidak ada perubahan untuk di-commit."
+            # Set output 'committed' menjadi false menggunakan file GITHUB_OUTPUT
+            echo "committed=false" >> $GITHUB_OUTPUT
+            exit 0 # Keluar dari langkah ini dengan sukses
+          fi
+
+          # --- Pencegahan Loop Tak Terbatas (Tetap dipertahankan) ---
+          # Mencegah commit jika commit terakhir sudah auto-commit (berguna untuk jadwal berdekatan)
+          # Ambil pesan commit terakhir (%B = body/message) di branch master remote
+          LAST_COMMIT_MSG=$(git log origin/master -1 --pretty=%B)
+          # Periksa apakah pesan cocok dengan pola commit otomatis (mengabaikan emoji)
+          # Regex: "chore(bot): " diikuti karakter apa saja (.*) lalu " auto commit"
+          if echo "$LAST_COMMIT_MSG" | grep -q "chore(bot): .* auto commit"; then
+            echo "Commit terakhir di master adalah auto commit dari workflow ini. Melewati commit untuk mencegah loop/redundansi."
+            echo "committed=false" >> $GITHUB_OUTPUT
+            exit 0 # Keluar dari langkah ini dengan sukses
+          fi
+          # --- Akhir Pencegahan Loop ---
+
+          # Jika kita sampai di sini, berarti ada perubahan dan commit terakhir bukan dari bot ini
+          # Array berisi pesan commit acak
           arr[0]="chore(bot): 😂 auto commit"
           arr[1]="chore(bot): 😱 auto commit"
           arr[2]="chore(bot): 👿 auto commit"
@@ -41,13 +88,29 @@ jobs:
           arr[7]="chore(bot): 🤖 auto commit"
           arr[8]="chore(bot): 🟩 auto commit"
           arr[9]="chore(bot): 👻 auto commit"
-          
+
+          # Dapatkan indeks acak dari 0 hingga (jumlah elemen - 1)
           rand=$[$RANDOM % ${#arr[@]}]
-          
-          git commit -m "${arr[$rand]}"
-          
+          COMMIT_MSG="${arr[$rand]}"
+
+          echo "Melakukan commit dengan pesan: $COMMIT_MSG"
+          # Lakukan commit dengan pesan yang dipilih secara acak
+          git commit -m "$COMMIT_MSG"
+
+          # Set output 'committed' menjadi true karena commit berhasil dilakukan
+          echo "committed=true" >> $GITHUB_OUTPUT
+
+      # Langkah 4: Push perubahan ke GitHub
       - name: GitHub Push
-        uses: ad-m/github-push-action@v0.6.0
+        # Hanya jalankan langkah ini JIKA langkah 'commit' menghasilkan output committed=true
+        if: steps.commit.outputs.committed == 'true'
+        # Gunakan action pihak ketiga untuk push
+        uses: ad-m/github-push-action@v0.6.0 # Pertimbangkan update ke versi terbaru jika perlu
         with:
+          # Direktori yang akan di-push (root)
           directory: "."
+          # Token GitHub bawaan untuk otentikasi
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Branch tujuan push (spesifik ke master)
+          branch: master
+          # Opsional: force: true # Gunakan dengan HATI-HATI jika Anda ingin menimpa history remote
