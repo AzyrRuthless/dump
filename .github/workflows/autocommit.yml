@@ -7,6 +7,7 @@ on:
   schedule:
     # Jalankan SETIAP HARI pada jam 07:00, 09:00, dan 11:00 UTC
     # Lihat: https://crontab.guru/#0_7,9,11_*_*_*
+    # Catatan: UTC adalah 7 jam di belakang WIB. Jadi ini sekitar jam 14:00, 16:00, dan 18:00 WIB.
     - cron: "0 7,9,11 * * *"
 
   # Izinkan workflow dijalankan secara manual dari tab Actions
@@ -31,8 +32,8 @@ jobs:
         with:
           # Jangan simpan kredensial di config git global (push action akan menangani auth)
           persist-credentials: false
-          # Ambil seluruh history (diperlukan untuk memeriksa commit terakhir)
-          fetch-depth: 0
+          # Ambil seluruh history (opsional jika tidak ada pemeriksaan log lagi, tapi tidak berbahaya)
+          fetch-depth: 0 # Bisa diubah ke 1 jika hanya perlu commit terbaru
 
       # Langkah 2: Ubah file LAST_UPDATED dengan timestamp saat ini
       - name: Modify last update file
@@ -40,7 +41,7 @@ jobs:
           # Format tanggal ISO 8601 UTC
           echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" > LAST_UPDATED
 
-      # Langkah 3: Lakukan commit jika ada perubahan & bukan loop
+      # Langkah 3: Lakukan commit jika ada perubahan
       - name: Commit changes
         # Beri ID pada langkah ini agar outputnya bisa dirujuk
         id: commit
@@ -56,6 +57,7 @@ jobs:
           git add LAST_UPDATED
 
           # Periksa apakah ada perubahan yang di-stage untuk di-commit
+          # Ini penting untuk kasus yang sangat jarang dimana file tidak berubah
           if git diff --staged --quiet; then
             echo "Tidak ada perubahan untuk di-commit."
             # Set output 'committed' menjadi false menggunakan file GITHUB_OUTPUT
@@ -63,20 +65,10 @@ jobs:
             exit 0 # Keluar dari langkah ini dengan sukses
           fi
 
-          # --- Pencegahan Loop Tak Terbatas (Tetap dipertahankan) ---
-          # Mencegah commit jika commit terakhir sudah auto-commit (berguna untuk jadwal berdekatan)
-          # Ambil pesan commit terakhir (%B = body/message) di branch master remote
-          LAST_COMMIT_MSG=$(git log origin/master -1 --pretty=%B)
-          # Periksa apakah pesan cocok dengan pola commit otomatis (mengabaikan emoji)
-          # Regex: "chore(bot): " diikuti karakter apa saja (.*) lalu " auto commit"
-          if echo "$LAST_COMMIT_MSG" | grep -q "chore(bot): .* auto commit"; then
-            echo "Commit terakhir di master adalah auto commit dari workflow ini. Melewati commit untuk mencegah loop/redundansi."
-            echo "committed=false" >> $GITHUB_OUTPUT
-            exit 0 # Keluar dari langkah ini dengan sukses
-          fi
-          # --- Akhir Pencegahan Loop ---
+          # --- Pencegahan Loop Dihapus ---
+          # Kode pemeriksaan commit terakhir telah dihapus dari bagian ini
 
-          # Jika kita sampai di sini, berarti ada perubahan dan commit terakhir bukan dari bot ini
+          # Jika kita sampai di sini, berarti ada perubahan yang siap di-commit
           # Array berisi pesan commit acak
           arr[0]="chore(bot): 😂 auto commit"
           arr[1]="chore(bot): 😱 auto commit"
@@ -114,3 +106,4 @@ jobs:
           # Branch tujuan push (spesifik ke master)
           branch: master
           # Opsional: force: true # Gunakan dengan HATI-HATI jika Anda ingin menimpa history remote
+
