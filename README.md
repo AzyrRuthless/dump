@@ -2,45 +2,39 @@
 
 [![GitHub Workflow Status](https://github.com/AzyrRuthless/dump/actions/workflows/autocommit.yml/badge.svg)](https://github.com/AzyrRuthless/dump/actions/workflows/autocommit.yml)
 
-Repositori ini (`AzyrRuthless/dump`) menggunakan GitHub Actions untuk secara otomatis memperbarui file `LAST_UPDATED` dengan timestamp saat ini dan melakukan commit perubahan tersebut kembali ke repositori.
+Repositori ini (`AzyrRuthless/dump`) menggunakan GitHub Actions untuk secara otomatis memperbarui file `LAST_UPDATED` dengan timestamp UTC saat ini dan melakukan commit perubahan tersebut kembali ke repositori.
 
 ## Tujuan
 
-Tujuan utama repositori ini adalah untuk:
+- Menunjukkan contoh penggunaan GitHub Actions untuk otomatisasi tugas Git dasar.
+- Menjaga repositori ini tetap aktif dengan commit otomatis berkala.
+- Menyimpan catatan sederhana kapan terakhir kali proses otomatis ini berhasil berjalan.
 
-1.  Menunjukkan contoh penggunaan GitHub Actions untuk otomatisasi tugas Git dasar.
-2.  Menjaga repositori ini tetap "aktif" dengan adanya commit otomatis secara berkala (misalnya, untuk aktivitas profil GitHub).
-3.  Menyimpan catatan sederhana kapan terakhir kali proses otomatis ini berhasil berjalan.
+## Pemicu
 
-## Bagaimana Cara Kerjanya?
+- Jadwal harian: workflow berjalan setiap hari pukul 07:00, 09:00, dan 11:00 UTC dengan cron `0 7,9,11 * * *`.
+- Manual: dapat dijalankan dari tab Actions melalui `workflow_dispatch`.
+- Catatan: workflow ini TIDAK memiliki pemicu `push`.
 
-Sebuah workflow GitHub Actions (didefinisikan dalam file `.github/workflows/auto_commit.yml`) dikonfigurasi untuk berjalan secara otomatis pada kondisi berikut:
+## Cara Kerjanya
 
-1.  **Setiap `push` ke branch `master`**: Workflow akan terpicu setiap kali ada perubahan yang di-push ke branch utama.
-2.  **Jadwal Harian**: Workflow dijadwalkan untuk berjalan **setiap hari** pada pukul **07:00, 09:00, dan 11:00 UTC** (`0 7,9,11 * * *`).
+- Checkout kode repositori pada runner Ubuntu.
+- Tulis timestamp UTC dalam format ISO 8601 ke berkas `LAST_UPDATED`.
+- Lakukan commit hanya jika ada perubahan pada `LAST_UPDATED` (untuk menghindari commit kosong).
+- Push perubahan ke branch `master` menggunakan `GITHUB_TOKEN` dengan izin `contents: write`.
 
-### Langkah-langkah Workflow:
+## Berkas Penting
 
-1.  **Checkout**: Mengambil kode terbaru dari repositori.
-2.  **Update Timestamp**: Memperbarui konten file `LAST_UPDATED` dengan tanggal dan waktu saat ini dalam format ISO 8601 UTC.
-3.  **Cek Perubahan & Pencegahan Loop**:
-    *   Memeriksa apakah file `LAST_UPDATED` benar-benar memiliki perubahan yang belum di-commit.
-    *   Memeriksa pesan commit terakhir. Jika commit terakhir juga merupakan auto-commit dari workflow ini (memiliki pola `chore(bot): ... auto commit`), proses commit dan push akan **dilewati** untuk **mencegah loop tak terbatas**.
-4.  **Commit**: Jika ada perubahan dan commit terakhir *bukan* dari bot ini, workflow akan melakukan `git commit` dengan salah satu pesan acak yang telah ditentukan (contoh: `chore(bot): 🤖 auto commit`).
-5.  **Push**: Mendorong (push) commit baru tersebut kembali ke branch `master` di repositori GitHub.
-
-## File Penting
-
-*   `LAST_UPDATED`: File teks sederhana yang berisi timestamp UTC terakhir kali workflow berhasil berjalan dan melakukan commit.
-*   `.github/workflows/auto_commit.yml`: File konfigurasi GitHub Actions yang menjalankan otomatisasi ini. *(Pastikan nama file ini sesuai dengan yang ada di repositori Anda)*
+- `LAST_UPDATED`: berisi timestamp UTC terakhir kali workflow sukses berjalan.
+- `.github/workflows/autocommit.yml`: definisi workflow yang mencakup `schedule` dan `workflow_dispatch`.
 
 ## Melihat Workflow
 
-Anda dapat melihat detail konfigurasi workflow dan riwayat eksekusinya di:
+- Tab **Actions** repositori ini: `https://github.com/AzyrRuthless/dump/actions`
+- File workflow: `./.github/workflows/autocommit.yml`
 
-*   Tab **Actions** repositori ini: [https://github.com/AzyrRuthless/dump/actions](https://github.com/AzyrRuthless/dump/actions)
-*   File Workflow itu sendiri: [`./.github/workflows/autocommit.yml`](./.github/workflows/autocommit.yml) *(Klik link ini jika nama file-nya sudah benar)*
+## Catatan
 
----
-
-*Repositori ini terutama berfungsi sebagai demonstrasi dan untuk menjaga aktivitas profil GitHub.*
+- Event `schedule` di GitHub Actions selalu dievaluasi dalam waktu UTC.
+- Pastikan `branch` pada langkah push sesuai dengan default branch repositori Anda (contoh ini memakai `master`).
+- Anda dapat memverifikasi ekspresi cron menggunakan editor seperti crontab.guru.
